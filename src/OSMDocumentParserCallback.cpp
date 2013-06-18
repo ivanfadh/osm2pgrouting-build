@@ -21,8 +21,10 @@
 #include "stdafx.h"
 #include "OSMDocumentParserCallback.h"
 #include "OSMDocument.h"
+#include "Relation.h"
 #include "Way.h"
 #include "Node.h"
+#include "utils.cpp"
 
 // define here, which streetstype you want to parse
 // for applying this filter, compile with "DISTRICT" as flag (g++ -DRESTRICT)
@@ -32,11 +34,52 @@ namespace osm
 {
 	
 	
+/*
+<relation id="147411" version="5" timestamp="2010-01-22T17:02:14Z" uid="24299" user="james_hiebert" changeset="3684904">
+    <member type="way" ref="25584788" role=""/>
+    <member type="way" ref="35064036" role=""/>
+    <member type="way" ref="35064035" role=""/>
+    <member type="way" ref="35064037" role=""/>
+    <member type="way" ref="35064038" role=""/>
+    <member type="way" ref="35065746" role=""/>
+    <member type="way" ref="48690404" role=""/>
+    <member type="way" ref="24221632" role=""/>
+    <tag k="name" v="Mt. Douglas Park Local Connector"/>
+    <tag k="network" v="rcn"/>
+    <tag k="route" v="bicycle"/>
+    <tag k="type" v="route"/>
+  </relation>
+ */
+
+	
 /**
 	Parser callback for OSMDocument files
 */
 void OSMDocumentParserCallback::StartElement( const char *name, const char** atts )
 {
+	// START RELATIONS CODE
+	if( strcmp(name,"member") == 0 )
+	{
+		// std::cout << "In member..." << std::endl;
+		
+		if( m_pActRelation && atts != NULL )
+		{
+			const char** attribut = (const char**)atts;
+			while( *attribut != NULL )
+			{
+				const char* name = *attribut++;
+				const char* value = *attribut++;
+				if( strcmp( name, "ref" ) == 0 )
+				{
+					long long wayRefId = atol( value );
+                	m_pActRelation->AddWayRef( wayRefId );
+				}
+			}
+		}
+	} 
+	// END RELATIONS CODE
+
+
 	if( strcmp(name,"nd") == 0 )
 	{
 		if( m_pActWay && atts != NULL )
@@ -55,7 +98,7 @@ void OSMDocumentParserCallback::StartElement( const char *name, const char** att
                                   }
 			}
 		}
-	}
+	} 
 	else if( strcmp(name,"node") == 0 )
 	{
 		if (atts != NULL)
@@ -84,9 +127,31 @@ void OSMDocumentParserCallback::StartElement( const char *name, const char** att
 			if( id>0 ) m_rDocument.AddNode( new Node( id, lat, lon ) );
 		}
 	}
+	// THIS IS THE RELATION CODE...
+	else if( strcmp(name,"relation") == 0 )
+	{
+		if (atts != NULL)
+		{
+			long long id=-1;
+			const char** attribut = (const char**)atts;
+			while( *attribut != NULL )
+			{
+				const char* name = *attribut++;
+				const char* value = *attribut++;
+				if( strcmp( name, "id" ) == 0 )
+				{
+					id = atol( value);
+				}
+			}
+			if( id>0 ) m_pActRelation = new Relation( id );
+			// std::cout<<"Starting relation: "<<id<<std::endl;
+
+		}
+	}
+	// END OF THE RELATIONS CODE
 	else if( strcmp(name,"tag") == 0 )
 	{
-		// <tag k="name" v="Pfänderweg"/>
+		// <tag k="name" v="Pfï¿½nderweg"/>
 		if (atts != NULL)
 		{
 			std::string k;
@@ -107,22 +172,112 @@ void OSMDocumentParserCallback::StartElement( const char *name, const char** att
 			}
 			if( !k.empty() )
 			{
+				//  CHECKING OUT SOME DATA...
+				// std::cout<<"k: "<<k<<", v: "<<v<<std::endl;
+				// std::cout<<"m_pActWay: "<<m_rDocument.m_rConfig.m_Types.count(k)<<std::endl;
+				// std::cout<<"thecount: "<<m_rDocument.m_rConfig.m_Types.count(k)<<std::endl;
 				if( m_pActWay && k.compare("name")==0 )
 				{
 					m_pActWay->name = v;
 				}
-				else if( m_pActWay && k.compare("oneway")==0 )
-				{
-					m_pActWay->oneway = true;					
-					std::cout<<"Edge "<<m_pActWay->id<<" is oneway"<<std::endl;
+				//checks ONEWAY tag
+				else if( m_pActWay && k.compare("oneway")==0 ){
+					if ((v.compare("yes")==0) || (v.compare("true")==0) || (v.compare("1")==0)){
+						m_pActWay->oneWayType = YES;
+					}else
+					//check false conditions: 0, no, false
+					if ((v.compare("no")==0) || (v.compare("false")==0) || (v.compare("0")==0)){
+						m_pActWay->oneWayType = NO;
+					}else
+					//check revers conditions: -1
+					if ((v.compare("-1")==0)){
+						m_pActWay->oneWayType = REVERSED;
+					}
+				//in case roundabout, if there is not additional oneway tag, set default oneway to YES
+				}else if(m_pActWay && k.compare("junction")==0 && v.compare("roundabout")==0){
+					if (m_pActWay->oneWayType == NO) m_pActWay->oneWayType= YES;
+				}
+				//handle maxspeed:forward tag
+				else if(m_pActWay && k.compare("maxspeed:forward")==0){
+					int mspeed_fwd = 50;
 
-				}				
+					if(my_utils::is_number(v)){
+						mspeed_fwd = atoi(v.c_str());
+					}else{
+						//TODO: handle non-numeric values, ex.: RO:urban
+						std::cout<<"unknown maxspeed value: "<<v<<std::endl;
+					}
+					m_pActWay->maxspeed_forward = mspeed_fwd;
+				}
+				//handler maxspeed:backward
+				else if(m_pActWay && k.compare("maxspeed:backward")==0){
+					int mspeed_backwd = 50;
+
+					if(my_utils::is_number(v)){
+						mspeed_backwd = atoi(v.c_str());
+					}else{
+						//TODO: handle non-numeric values, ex.: RO:urban
+						std::cout<<"unknown maxspeed value: "<<v<<std::endl;
+					}
+					m_pActWay->maxspeed_backward= mspeed_backwd;
+				}
+				else if(m_pActWay && k.compare("maxspeed")==0){
+					int mspeed_fwd = 50;
+					int mspeed_backwd = 50;
+
+					if(my_utils::is_number(v)){
+						mspeed_fwd = atoi(v.c_str());
+						mspeed_backwd = atoi(v.c_str());
+					}else{
+						//TODO: handle non-numeric values, ex.: RO:urban
+						std::cout<<"unknown maxspeed value: "<<v<<std::endl;
+					}
+					m_pActWay->maxspeed_backward= mspeed_backwd;
+					m_pActWay->maxspeed_forward=mspeed_fwd;
+				}
 				//else if( m_pActWay && k.compare("highway")==0 )
-				else if( m_pActWay && m_rDocument.m_rConfig.m_Types.count(k) )
+				else if( m_pActWay && m_rDocument.m_rConfig.m_Types.count(k) )				
 				{
 					m_pActWay->type = k;
 					m_pActWay->clss = v;
+					
+					
+					if( m_rDocument.m_rConfig.m_Types.count(m_pActWay->type) && m_rDocument.m_rConfig.m_Types[m_pActWay->type]->m_Classes.count(m_pActWay->clss) ) {
+						
+						m_pActWay->AddTag( k, v );
+
+						// std::cout<<"Added tag: "<<k<<" "<<v<<std::endl;
+
+						//set default maxspeed values from classes, if not set previously (default: -1)
+						if(m_pActWay->maxspeed_forward<=0){
+							int newValue = m_rDocument.m_rConfig.m_Types[m_pActWay->type]->m_Classes[m_pActWay->clss]->default_maxspeed;
+							m_pActWay->maxspeed_forward = newValue;
+						}
+						if(m_pActWay->maxspeed_backward<=0){
+							int newValue = m_rDocument.m_rConfig.m_Types[m_pActWay->type]->m_Classes[m_pActWay->clss]->default_maxspeed;
+							m_pActWay->maxspeed_backward = newValue;
+						}
+
+					}
 				}
+				// START TAG FOR RELATION
+				else if( m_pActRelation && m_rDocument.m_rConfig.m_Types.count(k)) 
+				{
+					if( m_rDocument.m_rConfig.m_Types.count(k) && m_rDocument.m_rConfig.m_Types[k]->m_Classes.count(v) ) {
+						
+						m_pActRelation->AddTag( k, v );
+						// std::cout<<"Added Relation tag: "<<k<<" "<<v<<std::endl;
+					}	
+					// std::cout<<"Relations tag: "<<k<<" "<<v<<std::endl;
+				}
+								
+				if (m_pActRelation && k.compare("name")==0 )
+				{
+					m_pActRelation->name = v;
+				}
+				
+				
+				// END TAG FOR RELATION
 			}
 		}
 	}
@@ -145,10 +300,11 @@ void OSMDocumentParserCallback::StartElement( const char *name, const char** att
 				{
 					visibility = strcmp(value,"true")==0;
 				}
+
 			}
 			if( id>0 )
 			{
-				m_pActWay = new Way( id, visibility );
+				m_pActWay = new Way( id, visibility, id ,-1, -1);
 				
 			}
 		}
@@ -170,21 +326,37 @@ void OSMDocumentParserCallback::EndElement( const char* name )
 		if( m_rDocument.m_rConfig.m_Types.count(m_pActWay->type) && m_rDocument.m_rConfig.m_Types[m_pActWay->type]->m_Classes.count(m_pActWay->clss) )
 		{
 		//#endif
-		std::cout<<"We need a way of type "<<m_pActWay->type<<" and class "<< m_pActWay->clss<<std::endl;
+		
+		// Comment out the following to get more log output
+		//std::cout<<"We need a way of type "<<m_pActWay->type<<" and class "<< m_pActWay->clss<<std::endl;
 		
 			m_rDocument.AddWay( m_pActWay );
+			// std::cout << "First tag: " << m_pActWay->m_Tags.back()->key << ":" << m_pActWay->m_Tags.back()->value << std::endl;
+
 
 		//#ifdef RESTRICT
 		}
 		else
 		{
-		std::cout<<"We DON'T need a way of type "<<m_pActWay->type<<" and class "<< m_pActWay->clss<<std::endl;
-			delete m_pActWay;
+		// std::cout<<"We DON'T need a way of type "<<m_pActWay->type<<" and class "<< m_pActWay->clss<<std::endl;
+			// delete m_pActWay;
 		}
 		//#endif
-		
+
 		m_pActWay = 0;
 	}
+	// THIS IS THE RELATION CODE...
+	else if( strcmp(name,"relation") == 0 )
+	{
+		m_rDocument.AddRelation( m_pActRelation );
+		m_pActRelation = 0;		
+
+		// std::cout<<"Adding relation: "<<m_pActRelation->id<<std::endl;
+	}
+	// END OF THE RELATIONS CODE
+	
+	
+	
 }
 
 }; // end namespace osm

@@ -34,13 +34,15 @@ namespace osm
 */
 void ConfigurationParserCallback::StartElement( const char *name, const char** atts )
 {
-	std::cout << "SE for <" << name << ">" << std::endl;
+	//std::cout << "SE for <" << name << ">" << std::endl;
 	if( strcmp(name,"class") == 0 )
 	{
 		if (atts != NULL)
 		{
 			long long id=-1;
 			std::string name;
+			double priority = 1;
+			int maxspeed=50;
 			const char** attribut = (const char**)atts;
 			while( *attribut != NULL )
 			{
@@ -49,19 +51,23 @@ void ConfigurationParserCallback::StartElement( const char *name, const char** a
 				if( strcmp( key, "id" ) == 0 )
 				{
 					id = atol( value );
-					std::cout << "class id = " << id << std::endl;
+					//std::cout << "class id = " << id << std::endl;
 
 				}
 				else if( strcmp( key, "name" ) == 0 )
 				{
 					name = value;
-					std::cout << "class name = " << name << std::endl;
+					//std::cout << "class name = " << name << std::endl;
+				}else if(strcmp(key, "priority") == 0){
+					priority = boost::lexical_cast<double>(value);
+				}else if(strcmp(key, "maxspeed") == 0){
+					maxspeed = boost::lexical_cast<int>(value);
 				}
 			}
 			if( id>0 && !name.empty() )
 			{
-				m_pActType->AddClass( new Class( id, name ) );
-				std::cout << "class id = "<<id<<" name = " << name << " added to type name=" << m_pActType->name << std::endl;
+				m_pActType->AddClass( new Class( id, name, priority, maxspeed ) );
+				//std::cout << "class id = "<<id<<" name = " << name << " added to type name=" << m_pActType->name << std::endl;
 			}
 		}
 	}

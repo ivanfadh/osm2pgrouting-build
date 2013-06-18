@@ -22,6 +22,7 @@
 #include "OSMDocument.h"
 #include "Configuration.h"
 #include "Node.h"
+#include "Relation.h"
 #include "Way.h"
 #include "math_functions.h"
 
@@ -37,6 +38,7 @@ OSMDocument::~OSMDocument()
 {
 	ez_mapdelete( m_Nodes );
 	ez_vectordelete( m_Ways );		
+	ez_vectordelete( m_Relations );		
 	ez_vectordelete( m_SplittedWays );
 }
 void OSMDocument::AddNode( Node* n )
@@ -47,6 +49,11 @@ void OSMDocument::AddNode( Node* n )
 void OSMDocument::AddWay( Way* w )
 {
 	m_Ways.push_back( w );
+}
+
+void OSMDocument::AddRelation( Relation* r )
+{
+	m_Relations.push_back( r );
 }
 
 Node* OSMDocument::FindNode( long long nodeRefId ) 
@@ -69,12 +76,11 @@ void OSMDocument::SplitWays()
 	{
 		Way* currentWay = *it++;
 		
+		// ITERATE THROUGH THE NODES
 		std::vector<Node*>::const_iterator it_node( currentWay->m_NodeRefs.begin());	
 		std::vector<Node*>::const_iterator last_node( currentWay->m_NodeRefs.end());
 		
 		Node* backNode = currentWay->m_NodeRefs.back();
-
-
 
 		while(it_node!=last_node)
 		{
@@ -83,15 +89,32 @@ void OSMDocument::SplitWays()
 			Node* secondNode=0;
 			Node* lastNode=0;
 			
-			Way* splitted_way = new Way( ++id, currentWay->visible );
+			Way* splitted_way = new Way( ++id, currentWay->visible, currentWay->osm_id, currentWay->maxspeed_forward, currentWay->maxspeed_backward );
 			splitted_way->name=currentWay->name;
 			splitted_way->type=currentWay->type;
 			splitted_way->clss=currentWay->clss;
-			splitted_way->oneway=currentWay->oneway;
-
-	//GeometryFromText('MULTILINESTRING(('||x1||' '||y1||','||x2||' '||y2||'))',4326);
+			splitted_way->oneWayType=currentWay->oneWayType;
 			
-			splitted_way->geom="MULTILINESTRING(("+ boost::lexical_cast<std::string>(node->lon) + " " + boost::lexical_cast<std::string>(node->lat) +",";
+			std::map<std::string, std::string>::iterator it_tag( currentWay->m_Tags.begin() );
+			std::map<std::string, std::string>::iterator last_tag( currentWay->m_Tags.end() );
+//			std::cout << "Number of tags: " << currentWay->m_Tags.size() << std::endl;
+//			std::cout << "First tag: " << currentWay->m_Tags.front()->key << ":" << currentWay->m_Tags.front()->value << std::endl;
+		
+			// ITERATE THROUGH THE TAGS
+		
+			while(it_tag!=last_tag)
+			{
+				std::pair<std::string, std::string> pair = *it_tag++;
+
+				splitted_way->AddTag(pair.first, pair.second);
+				
+			}
+			
+			
+
+	//GeometryFromText('LINESTRING('||x1||' '||y1||','||x2||' '||y2||')',4326);
+			
+			splitted_way->geom="LINESTRING("+ boost::lexical_cast<std::string>(node->lon) + " " + boost::lexical_cast<std::string>(node->lat) +",";
 			
 			splitted_way->AddNodeRef(node);
 			
@@ -111,7 +134,7 @@ void OSMDocument::SplitWays()
 						if(length<0)
 							length*=-1;
 						splitted_way->length+=length;
-						splitted_way->geom+= boost::lexical_cast<std::string>(secondNode->lon) + " " + boost::lexical_cast<std::string>(secondNode->lat) + "))";
+						splitted_way->geom+= boost::lexical_cast<std::string>(secondNode->lon) + " " + boost::lexical_cast<std::string>(secondNode->lat) + ")";
 						
 					}
 					else if(backNode==(*it_node))
@@ -122,7 +145,7 @@ void OSMDocument::SplitWays()
 						if(length<0)
 							length*=-1;
 						splitted_way->length+=length;
-						splitted_way->geom+= boost::lexical_cast<std::string>(lastNode->lon) + " " + boost::lexical_cast<std::string>(lastNode->lat) + "))";
+						splitted_way->geom+= boost::lexical_cast<std::string>(lastNode->lon) + " " + boost::lexical_cast<std::string>(lastNode->lat) + ")";
 					}
 					else
 					{
