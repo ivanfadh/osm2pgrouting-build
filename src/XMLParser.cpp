@@ -19,6 +19,8 @@
  ***************************************************************************/
 
 #include <cstdio> 
+#include <errno.h>
+#include <string.h>
 #include "stdafx.h"
 #include "XMLParser.h"
 
@@ -68,7 +70,7 @@ int XMLParser::Parse( XMLParserCallback& rCallback, const char* chFileName )
   	  // a parse error occured:
         fprintf(stderr,
   	      "%s at line %d\n",
-  	      XML_ErrorString(XML_GetErrorCode(parser)),
+  	      XML_ErrorString(XML_GetErrorCode(parser)),(int)
   	      XML_GetCurrentLineNumber(parser));
   	       fclose(fp);
         ret = 2;	// quit, return = 2 indicating parsing error
@@ -79,6 +81,8 @@ int XMLParser::Parse( XMLParserCallback& rCallback, const char* chFileName )
     XML_ParserFree(parser);
     fclose(fp);
     ret = 0;
+  }else{
+    fprintf(stderr, "Error opening %s: %s\n", chFileName, strerror(errno));
   }
   return ret; // return = 0 indicating success
 }
