@@ -2,9 +2,9 @@ Source: osm2pgrouting
 Section: utils
 Priority: extra
 Maintainer: Frederic Junod <frederic.junod@camptocamp.com>
-Build-Depends: debhelper (>= 7), libboost-graph-dev, libpq-dev, libexpat1-dev
+Build-Depends: debhelper (>= 7), cdbs, libboost-graph-dev, libpq-dev, libexpat1-dev
 Standards-Version: 3.7.3
-Homepage: http://pgrouting.postlbs.org/wiki/tools/osm2pgrouting
+Homepage: https://github.com/pgRouting/osm2pgrouting
 
 Package: osm2pgrouting
 Architecture: any
