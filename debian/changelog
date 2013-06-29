@@ -1,3 +1,10 @@
+osm2pgrouting (2.0.0-beta-ppa4) quantal; urgency=medium
+
+  [ Daniel Kastl (Georepublic) ]
+  * Imported Upstream version 2.0.0-beta2
+
+ -- Daniel Kastl (Georepublic) <daniel@georepublic.de>  Sat, 29 Jun 2013 09:12:59 +0900
+
 osm2pgrouting (2.0.0-beta-ppa3) quantal; urgency=medium
 
   [ Daniel Kastl (Georepublic) ]
