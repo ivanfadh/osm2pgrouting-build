@@ -1,6 +1,19 @@
-osm2pgrouting for Debian
-------------------------
+osm2pgrouting - Import OSM data for pgRouting
+---------------------------------------------
 
-<possible notes regarding this package - if none, delete this file>
+osm2pgrouting is a command line tool that makes it easy to import OpenStreetMap data into a pgRouting database. It builds the routing network topology automatically and creates tables for feature types and road classes. osm2pgrouting was primarily written by Daniel Wendt and is now hosted on the pgRouting project site.
 
- -- Frederic Junod <frederic.junod@camptocamp.com>  Wed, 30 Jun 2010 08:53:51 +0200
+Project website: http://www.pgrouting.org/docs/tools/osm2pgrouting.html
+Code repository: https://github.com/pgRouting/osm2pgrouting
+
+How to use
+----------
+
+osm2pgrouting -file your-OSM-XML-File.osm \
+	-conf mapconfig.xml -dbname routing \
+	-user postgres -clean
+
+License
+-------
+
+osm2pgrouting is available under the GPLv2 license.
