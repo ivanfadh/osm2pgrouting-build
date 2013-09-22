@@ -1,3 +1,10 @@
+osm2pgrouting (2.0.0-release-ppa1~quantal1) quantal; urgency=medium
+
+  * Imported Upstream version 2.0.0-release
+  * Cleaned up and updated Debian directory
+
+ -- Daniel Kastl (Georepublic) <daniel@georepublic.de>  Sun, 22 Sep 2013 11:22:58 +0900
+
 osm2pgrouting (2.0.0-beta-ppa4) quantal; urgency=medium
 
   [ Daniel Kastl (Georepublic) ]
