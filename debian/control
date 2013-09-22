@@ -1,8 +1,9 @@
 Source: osm2pgrouting
 Section: utils
 Priority: extra
-Maintainer: Frederic Junod <frederic.junod@camptocamp.com>
-Build-Depends: debhelper (>= 7), cdbs, libboost-graph-dev, libpq-dev, libexpat1-dev
+Maintainer: Ubuntu Developers <ubuntu-devel-discuss@lists.ubuntu.com>
+XSBC-Original-Maintainer: Daniel Kastl <daniel@georepublic.de>
+Build-Depends: debhelper (>= 7), cdbs, cmake, libboost-graph-dev, libpq-dev, libexpat1-dev
 Standards-Version: 3.7.3
 Homepage: https://github.com/pgRouting/osm2pgrouting
 

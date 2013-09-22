@@ -9,7 +9,8 @@
 #export DH_VERBOSE=1
 
 include /usr/share/cdbs/1/rules/debhelper.mk
-include /usr/share/cdbs/1/class/makefile.mk
+include /usr/share/cdbs/1/class/cmake.mk
 
-
-
+# Build CMake flags
+# ------------------------------------------------------------------------------
+#DEB_CMAKE_NORMAL_ARGS
