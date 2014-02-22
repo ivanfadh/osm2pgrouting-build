@@ -1,3 +1,9 @@
+osm2pgrouting (2.0.0-release-ppa1~precise2) precise; urgency=medium
+
+  * changed RUNTIME DESTINATION target
+
+ -- Daniel Kastl (Georepublic) <daniel@georepublic.de>  Sun, 23 Feb 2014 05:53:29 +0900
+
 osm2pgrouting (2.0.0-release-ppa1~saucy1) saucy; urgency=medium
 
   * Imported Upstream version 2.0.0-release
