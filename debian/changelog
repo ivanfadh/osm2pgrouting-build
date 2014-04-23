@@ -1,3 +1,9 @@
+osm2pgrouting (2.0.0-release-ppa1~trusty1) trusty; urgency=medium
+
+  * Rebuild for trusty
+
+ -- Daniel Kastl (Georepublic) <daniel@georepublic.de>  Wed, 23 Apr 2014 22:20:34 +0900
+
 osm2pgrouting (2.0.0-release-ppa1~precise2) precise; urgency=medium
 
   * changed RUNTIME DESTINATION target
