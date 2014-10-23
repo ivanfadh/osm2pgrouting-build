@@ -1,8 +1,8 @@
-osm2pgrouting (2.0.0-release-ppa1~trusty1) trusty; urgency=medium
+osm2pgrouting (2.0.0-release-ppa1~utopic1) utopic; urgency=medium
 
-  * Rebuild for trusty
+  * Rebuild for utopic
 
- -- Daniel Kastl (Georepublic) <daniel@georepublic.de>  Wed, 23 Apr 2014 22:20:34 +0900
+ -- Daniel Kastl (Georepublic) <daniel@georepublic.de>  Fri, 24 Oct 2014 02:30:38 +0900
 
 osm2pgrouting (2.0.0-release-ppa1~precise2) precise; urgency=medium
 
