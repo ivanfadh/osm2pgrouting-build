@@ -3,7 +3,7 @@ Section: utils
 Priority: extra
 Maintainer: Ubuntu Developers <ubuntu-devel-discuss@lists.ubuntu.com>
 XSBC-Original-Maintainer: Daniel Kastl <daniel@georepublic.de>
-Build-Depends: debhelper (>= 7), cdbs, cmake, libboost-graph-dev, libpq-dev, libexpat1-dev
+Build-Depends: debhelper (>= 7), cdbs, cmake, libboost-graph-dev, libboost-program-options-dev, libpq-dev, libexpat1-dev
 Standards-Version: 3.7.3
 Homepage: https://github.com/pgRouting/osm2pgrouting
 

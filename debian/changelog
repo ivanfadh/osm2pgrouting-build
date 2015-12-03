@@ -1,3 +1,11 @@
+osm2pgrouting (2.1.0-alpha-ppa1~wily1) wily; urgency=medium
+
+  * removed Makefile
+  * adjust to new GBP syntax
+  * Imported Upstream version 2.1.0-alpha
+
+ -- Daniel Kastl (Georepublic) <daniel@georepublic.de>  Thu, 03 Dec 2015 09:46:04 +0900
+
 osm2pgrouting (2.0.0-release-ppa1~utopic1) utopic; urgency=medium
 
   * Rebuild for utopic
