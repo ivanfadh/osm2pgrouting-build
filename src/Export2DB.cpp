@@ -20,7 +20,6 @@
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
 
-#include "stdafx.h"
 #include "Export2DB.h"
 #include "boost/algorithm/string/replace.hpp"
 #include "prog_options.h"
@@ -33,15 +32,15 @@
 Export2DB::Export2DB(const  po::variables_map &vm)
 :     mycon(0),
       conninf ( "host=" + vm["host"].as<std::string>()
-            + " user=" +  vm["user"].as<std::string>()
+            + " user=" +  vm["username"].as<std::string>()
             + " dbname=" + vm["dbname"].as<std::string>()
-            + " port=" + vm["db_port"].as<std::string>() ),
+            + " port=" + vm["port"].as<std::string>() ),
     tables_schema( vm["schema"].as<std::string>() ),
     tables_prefix( vm["prefix"].as<std::string>() ),
     tables_suffix( vm["suffix"].as<std::string>() ) {
 
-        if(!vm["passwd"].as<std::string>().empty())
-            this->conninf+=" password=" + vm["passwd"].as<std::string>();
+        if(!vm["password"].as<std::string>().empty())
+            this->conninf+=" password=" + vm["password"].as<std::string>();
 
     create_types = std::string(
                " type_id integer PRIMARY KEY,"
@@ -90,7 +89,9 @@ Export2DB::Export2DB(const  po::variables_map &vm)
             " cost_s double precision, "
             " reverse_cost_s double precision,"
             " rule text,"
-            " one_way int, "  // 0 unknown, 1 yes(normal direction), 2 (2 way), -1 reversed (1 way but geometry is reversed) 
+            " one_way int, "  // 0 unknown, 1 yes(normal direction), 2 (2 way),
+                              // -1 reversed (1 way but geometry is reversed)
+                              // 3 - reversible (one way street but direction chnges on time)
             " maxspeed_forward integer,"
             " maxspeed_backward integer,"
             " osm_id bigint,"
@@ -175,12 +176,22 @@ bool Export2DB::createTempTable (const std::string &table_description,
  );
 
 */
+bool Export2DB::has_postGIS() const{
+    std::string sql = "SELECT * FROM pg_extension WHERE extname = 'postgis'";
+    PGresult *result = PQexec(mycon, sql.c_str());
+    if (PQresultStatus(result) != PGRES_TUPLES_OK) {
+        std::cout << PQresultErrorMessage(result) << "\n";
+        throw;
+    }
+    return  static_cast<bool>(PQntuples(result));
+}
+
 bool Export2DB::createTable(const std::string &table_description,
                              const std::string &table,
                             const std::string &constraint) const {
     std::string sql = 
 	"CREATE TABLE " + table + "("    
-        + table_description + ");";
+        + table_description + constraint + ");";
 
     PGresult *result = PQexec(mycon, sql.c_str());
     bool created = (PQresultStatus(result) == PGRES_COMMAND_OK);
@@ -203,16 +214,11 @@ void Export2DB::addGeometry(
                + "'the_geom', 4326, '" + geometry_type + "',2 );";
 
     PGresult *result = PQexec(mycon, sql.c_str());
-    //TODO check missing
-#if 0
-    if (PQresultStatus(result) != PGRES_TUPLES_OK) { // TODO I think the condition is wrong (vicky)
-            std::cout << "   Something went wrong when adding the geomtery column in Table " << table << ".\n"
-                << std::endl;
-	    throw;
-    } else {
-            std::cout << "   OK" << std::endl;
+
+    if (PQresultStatus(result) != PGRES_TUPLES_OK) {
+        std::cout << PQresultErrorMessage(result) << "<-------\n";
+        throw std::string(PQresultErrorMessage(result)) ;
     }
-#endif
     PQclear(result);
 }
 
@@ -225,7 +231,10 @@ void Export2DB::addTempGeometry(
             + "'the_geom', 4326, '" + geometry_type + "',2 );";
 
     PGresult *result = PQexec(mycon, sql.c_str());
-    //TODO check missing
+    if (PQresultStatus(result) != PGRES_TUPLES_OK) {
+        std::cout << PQresultErrorMessage(result);
+        throw std::string(PQresultErrorMessage(result)) ;
+    }
     PQclear(result);
 }
 
@@ -236,7 +245,11 @@ void Export2DB::create_gindex(const std::string &index, const std::string &table
              + index + "_gdx ON " 
              + table + " using gist(the_geom);" );
     PGresult *result = PQexec(mycon, sql.c_str());
-    //TODO check missing
+
+    if (PQresultStatus(result) != PGRES_COMMAND_OK) {
+        std::cout << PQresultErrorMessage(result);
+        throw std::string(PQresultErrorMessage(result)) ;
+    }
     PQclear(result);
 }
 
@@ -477,7 +490,7 @@ std::cout << row_data << "\n";
 
 //////////should break into 2 functions
 
-void Export2DB::exportRelationsWays(const std::vector<Relation*> &relations, Configuration *config) const {
+void Export2DB::exportRelationsWays(const std::vector<Relation*> &relations/*, Configuration *config*/) const {
     std::cout << "    Processing way's relations: ";
     createTempTable( create_relations_ways, "__relations_ways_temp" );
     
@@ -673,7 +686,7 @@ void Export2DB::exportWays(const std::vector<Way*> &ways, Configuration *config)
     process_section(count, ways_columns);
 }
 
-void Export2DB::process_section(int count, const std::string &ways_columns) const{
+void Export2DB::process_section(int64_t count, const std::string &ways_columns) const{
 
 
     // std::cout << "Creating indices in temporary table\n";
