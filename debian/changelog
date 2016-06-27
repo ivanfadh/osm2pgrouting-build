@@ -1,3 +1,9 @@
+osm2pgrouting (2.1.0-release-ppa1~wily1) wily; urgency=medium
+
+  * Imported Upstream version 2.1.0
+
+ -- Daniel Kastl (Georepublic) <daniel@georepublic.de>  Mon, 27 Jun 2016 16:29:59 +0900
+
 osm2pgrouting (2.1.0-alpha-ppa1~wily1) wily; urgency=medium
 
   * removed Makefile

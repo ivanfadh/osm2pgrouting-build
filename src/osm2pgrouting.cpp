@@ -19,16 +19,12 @@
  ***************************************************************************/
 #include <unistd.h>
 #include <string>
+#include <iostream>
 #include <ctime>
 #include <chrono>
-#include "./stdafx.h"
-#include "./Configuration.h"
 #include "./ConfigurationParserCallback.h"
 #include "./OSMDocument.h"
 #include "./OSMDocumentParserCallback.h"
-#include "./Way.h"
-#include "./Node.h"
-#include "./Relation.h"
 #include "./Export2DB.h"
 #include "./prog_options.h"
 
@@ -38,7 +34,6 @@ int main(int argc, char* argv[]) {
     //  Start Timers
     clock_t begin = clock();
     std::time_t start_t = std::time(NULL);
-    std::cout << "Execution starts at: " << std::ctime(&start_t) << "\n";
     std::chrono::steady_clock::time_point begin_elapsed = std::chrono::steady_clock::now();
     try {
 
@@ -54,6 +49,11 @@ int main(int argc, char* argv[]) {
             return 0;
         }
 
+        if (vm.count("version")) {
+            std::cout << "This is osm2pgrouting Version 2.1\n";
+            return 0;
+        }
+
         try {
             notify(vm);
         }
@@ -64,33 +64,23 @@ int main(int argc, char* argv[]) {
             return 0;
         }
 
-        process_command_line(vm, od_desc);
+        std::cout << "Execution starts at: " << std::ctime(&start_t) << "\n";
+        process_command_line(vm);
 
         auto dataFile(vm["file"].as<string>());
         auto confFile(vm["conf"].as<string>());
-#if 0
-        auto host(vm["host"].as<std::string>());
-        auto user(vm["user"].as<std::string>());
-        auto db_port(vm["db_port"].as<std::string>());
-        auto dbname(vm["dbname"].as<std::string>());
-        auto passwd(vm["passwd"].as<std::string>());
-        auto prefixtables(vm["prefix"].as<std::string>());
-        auto suffixtables(vm["suffix"].as<std::string>());
-#endif
-        auto skipnodes(vm["skipnodes"].as<bool>());
-        auto clean(vm["clean"].as<bool>());
+        auto skipnodes(!vm.count("addnodes"));
+        auto clean(vm.count("clean"));
 
-#if 0
-        // variable to be used later 
-        auto threads (vm["threads"].as<bool>() );
-        auto multimodal (vm["multimodal"].as<bool>() );
-        auto multilevel (vm["multilevel"].as<bool>() );
-#endif
 
         std::cout << "Connecting to the database"  << endl;
             Export2DB dbConnection(vm);
             if (dbConnection.connect() == 1)
                 return 1;
+            if (!dbConnection.has_postGIS()) {
+                std::cout << "ERROR: postGIS not found\n";
+                return 1;
+            }
 
 
         std::cout << "Opening configuration file: " << confFile.c_str() << endl;
@@ -138,7 +128,7 @@ int main(int argc, char* argv[]) {
             dbConnection.exportTypes(config->m_Types);
             dbConnection.exportClasses(config->m_Types);
             //dbConnection.exportRelations(document->m_Relations, config);
-            dbConnection.exportRelationsWays(document->m_Relations, config);
+            dbConnection.exportRelationsWays(document->m_Relations);
             dbConnection.exportTags(document->m_SplittedWays, config);
             dbConnection.exportWays(document->m_SplittedWays, config);
 
@@ -175,5 +165,13 @@ int main(int argc, char* argv[]) {
     catch (exception &e) {
         std::cout << e.what() << endl;
         return 1;
-    }
+    } 
+    catch (string &e) {
+        std::cout << e << endl;
+        return 1;
+    } 
+    catch (...) {
+        std::cout << "Terminating" << endl;
+        return 1;
+    } 
 }
